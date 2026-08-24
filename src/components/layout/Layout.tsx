@@ -31,11 +31,10 @@ export const Layout: React.FC = () => {
     <div className="min-h-screen bg-[#0B0D10] text-[#F5F7FA] flex flex-col md:flex-row">
       {/* Sidebar for Desktop */}
       <Sidebar />
-
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
         <TopBar />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
+        <main className="flex-1 p-1 sm:p-2 lg:p-2 w-full">
           <Outlet />
         </main>
       </div>

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Currency, ProjectStatus } from '../../types';
+import { ProjectStatus } from '../../types';
 import { Button } from '../ui/Button';
-import { Input, Select, Textarea } from '../ui/Input';
+import { AmountInput, Input, Select, Textarea } from '../ui/Input';
 import { Modal } from '../ui/Modal';
 
 export const ProjectModal: React.FC = () => {
@@ -12,7 +12,6 @@ export const ProjectModal: React.FC = () => {
     editingProject,
     addProject,
     updateProject,
-    settings,
   } = useApp();
 
   const [name, setName] = useState('');
@@ -21,7 +20,6 @@ export const ProjectModal: React.FC = () => {
   const [deadline, setDeadline] = useState('');
   const [color, setColor] = useState('#6366F1');
   const [budget, setBudget] = useState('');
-  const [currency, setCurrency] = useState<Currency>(settings.defaultCurrency);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
@@ -44,7 +42,6 @@ export const ProjectModal: React.FC = () => {
       setDeadline(editingProject.deadline || '');
       setColor(editingProject.color || '#6366F1');
       setBudget(editingProject.budget ? String(editingProject.budget) : '');
-      setCurrency(editingProject.currency);
       setNotes(editingProject.notes || '');
     } else {
       setName('');
@@ -53,11 +50,10 @@ export const ProjectModal: React.FC = () => {
       setDeadline('');
       setColor('#6366F1');
       setBudget('');
-      setCurrency(settings.defaultCurrency);
       setNotes('');
     }
     setError('');
-  }, [editingProject, isProjectModalOpen, settings.defaultCurrency]);
+  }, [editingProject, isProjectModalOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,14 +62,16 @@ export const ProjectModal: React.FC = () => {
       return;
     }
 
+    const budgetNum = budget.trim() ? parseFloat(budget.replace(/\s+/g, '')) : undefined;
+
     const payload = {
       name: name.trim(),
       description: description.trim(),
       status,
       deadline: deadline || undefined,
       color,
-      budget: budget ? parseFloat(budget) : undefined,
-      currency,
+      budget: budgetNum && !isNaN(budgetNum) ? budgetNum : undefined,
+      currency: 'UZS' as const,
       notes: notes.trim(),
     };
 
@@ -91,8 +89,8 @@ export const ProjectModal: React.FC = () => {
       isOpen={isProjectModalOpen}
       onClose={closeProjectModal}
       title={editingProject ? 'Редактировать проект' : 'Создать проект'}
-      subtitle="Управление целями, сроками и бюджетом проекта"
-      maxWidth="md"
+      subtitle="Управление целями, сроками и бюджетом проекта в сумах"
+      maxWidth="lg"
       footer={
         <>
           <Button variant="secondary" size="sm" type="button" onClick={closeProjectModal}>
@@ -107,7 +105,7 @@ export const ProjectModal: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Название проекта"
-          placeholder="Например: Launch Mobile App MVP"
+          placeholder="Например: Разработка платформы MVP"
           value={name}
           onChange={(e) => {
             setName(e.target.value);
@@ -147,29 +145,13 @@ export const ProjectModal: React.FC = () => {
           />
         </div>
 
-        {/* Budget & Currency */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="col-span-2">
-            <Input
-              label="Бюджет (опционально)"
-              type="number"
-              min="0"
-              placeholder="0.00"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-            />
-          </div>
-          <Select
-            label="Валюта"
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value as Currency)}
-          >
-            <option value="USD">USD ($)</option>
-            <option value="UZS">UZS (сум)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="RUB">RUB (₽)</option>
-          </Select>
-        </div>
+        {/* Budget in UZS */}
+        <AmountInput
+          label="Бюджет проекта (сум, опционально)"
+          placeholder="50 000"
+          value={budget}
+          onChange={(val) => setBudget(val)}
+        />
 
         {/* Color Palette */}
         <div className="space-y-2 text-left">
@@ -200,3 +182,4 @@ export const ProjectModal: React.FC = () => {
     </Modal>
   );
 };
+

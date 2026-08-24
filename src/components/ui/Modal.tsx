@@ -37,11 +37,11 @@ export const Modal: React.FC<ModalProps> = ({
   }, [isOpen, onClose]);
 
   const maxWidthClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
+    sm: 'max-w-md sm:max-w-lg',
+    md: 'max-w-lg sm:max-w-2xl',
+    lg: 'max-w-2xl sm:max-w-3xl lg:max-w-4xl',
+    xl: 'max-w-4xl sm:max-w-5xl lg:max-w-6xl',
+    '2xl': 'max-w-5xl sm:max-w-6xl lg:max-w-7xl',
   };
 
   return (

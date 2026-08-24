@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Currency, TransactionType } from '../../types';
+import { TransactionType } from '../../types';
 import { getTodayDateString } from '../../utils/date';
 import { Button } from '../ui/Button';
-import { Input, Select, Textarea } from '../ui/Input';
+import { AmountInput, Input, Select, Textarea } from '../ui/Input';
 import { Modal } from '../ui/Modal';
 
 export const TransactionModal: React.FC = () => {
@@ -16,12 +16,10 @@ export const TransactionModal: React.FC = () => {
     updateTransaction,
     projects,
     people,
-    settings,
   } = useApp();
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState<Currency>(settings.defaultCurrency);
   const [category, setCategory] = useState('');
   const [date, setDate] = useState(getTodayDateString());
   const [description, setDescription] = useState('');
@@ -56,7 +54,6 @@ export const TransactionModal: React.FC = () => {
     if (editingTransaction) {
       setType(editingTransaction.type);
       setAmount(String(editingTransaction.amount));
-      setCurrency(editingTransaction.currency);
       setCategory(editingTransaction.category);
       setDate(editingTransaction.date);
       setDescription(editingTransaction.description || '');
@@ -65,7 +62,6 @@ export const TransactionModal: React.FC = () => {
     } else {
       setType(defaultTxType);
       setAmount('');
-      setCurrency(settings.defaultCurrency);
       setCategory(defaultTxType === 'income' ? incomeCategories[0] : expenseCategories[0]);
       setDate(getTodayDateString());
       setDescription('');
@@ -73,13 +69,13 @@ export const TransactionModal: React.FC = () => {
       setPersonId('');
     }
     setError('');
-  }, [editingTransaction, defaultTxType, isTransactionModalOpen, settings.defaultCurrency]);
+  }, [editingTransaction, defaultTxType, isTransactionModalOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const numAmount = parseFloat(amount);
+    const numAmount = parseFloat(amount.replace(/\s+/g, ''));
     if (isNaN(numAmount) || numAmount <= 0) {
-      setError('Укажите корректную положительную сумму');
+      setError('Укажите корректную положительную сумму в сумах');
       return;
     }
     if (!category.trim()) {
@@ -94,7 +90,7 @@ export const TransactionModal: React.FC = () => {
     const payload = {
       type,
       amount: numAmount,
-      currency,
+      currency: 'UZS' as const,
       category: category.trim(),
       date,
       description: description.trim() || category,
@@ -116,8 +112,8 @@ export const TransactionModal: React.FC = () => {
       isOpen={isTransactionModalOpen}
       onClose={closeTransactionModal}
       title={editingTransaction ? 'Редактировать запись' : type === 'income' ? 'Новый доход' : 'Новый расход'}
-      subtitle="Фиксация финансовой операции с привязкой к проекту или контрагенту"
-      maxWidth="md"
+      subtitle="Фиксация финансовой операции в национальной валюте (сум) с привязкой к проекту или контрагенту"
+      maxWidth="lg"
       footer={
         <>
           <Button variant="secondary" size="sm" type="button" onClick={closeTransactionModal}>
@@ -167,36 +163,19 @@ export const TransactionModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Amount & Currency */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="col-span-2">
-            <Input
-              label="Сумма"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
-                setError('');
-              }}
-              error={error}
-              required
-              autoFocus
-            />
-          </div>
-          <Select
-            label="Валюта"
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value as Currency)}
-          >
-            <option value="USD">USD ($)</option>
-            <option value="UZS">UZS (сум)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="RUB">RUB (₽)</option>
-          </Select>
-        </div>
+        {/* Amount Input */}
+        <AmountInput
+          label="Сумма (сум)"
+          placeholder="50 000"
+          value={amount}
+          onChange={(val) => {
+            setAmount(val);
+            setError('');
+          }}
+          error={error}
+          required
+          autoFocus
+        />
 
         {/* Category & Date */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -266,3 +245,4 @@ export const TransactionModal: React.FC = () => {
     </Modal>
   );
 };
+

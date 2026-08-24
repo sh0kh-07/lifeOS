@@ -6,7 +6,6 @@ import {
   Plus,
   Search,
   Trash2,
-  User,
   Users,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -14,7 +13,7 @@ import { Card } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useApp } from '../context/AppContext';
 import { Person } from '../types';
-import { formatMoney } from '../utils/format';
+import { formatMoney, formatUzbekPhone } from '../utils/format';
 
 export const PeoplePage: React.FC = () => {
   const {
@@ -72,7 +71,7 @@ export const PeoplePage: React.FC = () => {
         <Search size={15} className="absolute left-3 top-3 text-[#8B93A1]" />
         <input
           type="text"
-          placeholder="Поиск по имени, роли, телефону или email..."
+          placeholder="Поиск по имени, роли, телефону (+998)..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full bg-[#151A21] border border-[#242A33] text-xs text-[#F5F7FA] placeholder-[#576071] rounded-xl pl-9 pr-3 py-2.5 outline-none focus:border-indigo-500"
@@ -139,7 +138,7 @@ export const PeoplePage: React.FC = () => {
                     {person.phone && (
                       <div className="flex items-center gap-2">
                         <Phone size={13} className="text-indigo-400 shrink-0" />
-                        <span className="font-mono">{person.phone}</span>
+                        <span className="font-mono text-[#F5F7FA]">{formatUzbekPhone(person.phone)}</span>
                       </div>
                     )}
                     {person.email && (
@@ -166,7 +165,7 @@ export const PeoplePage: React.FC = () => {
                         <div key={d.id} className="text-xs flex justify-between text-[#F5F7FA]">
                           <span>{d.type === 'they_owe' ? 'Мне должен' : 'Я должен'}:</span>
                           <span className="font-bold font-mono">
-                            {formatMoney(d.totalAmount, d.currency)}
+                            {formatMoney(d.totalAmount, 'UZS')}
                           </span>
                         </div>
                       ))}
@@ -192,3 +191,4 @@ export const PeoplePage: React.FC = () => {
     </div>
   );
 };
+

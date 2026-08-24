@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { GoalMilestone } from '../../types';
 import { Button } from '../ui/Button';
-import { Input, Select, Textarea } from '../ui/Input';
+import { AmountInput, Input, Select, Textarea } from '../ui/Input';
 import { Modal } from '../ui/Modal';
 
 export const GoalModal: React.FC = () => {
@@ -14,7 +14,7 @@ export const GoalModal: React.FC = () => {
   const [category, setCategory] = useState('Финансы');
   const [targetAmount, setTargetAmount] = useState('');
   const [currentAmount, setCurrentAmount] = useState('0');
-  const [unit, setUnit] = useState('$');
+  const [unit, setUnit] = useState('сум');
   const [deadline, setDeadline] = useState('');
   const [status, setStatus] = useState<'active' | 'achieved' | 'paused'>('active');
   const [milestones, setMilestones] = useState<GoalMilestone[]>([]);
@@ -29,7 +29,7 @@ export const GoalModal: React.FC = () => {
       setCategory(editingGoal.category || 'Финансы');
       setTargetAmount(String(editingGoal.targetAmount));
       setCurrentAmount(String(editingGoal.currentAmount));
-      setUnit(editingGoal.unit || '$');
+      setUnit(editingGoal.unit === '$' ? 'сум' : editingGoal.unit || 'сум');
       setDeadline(editingGoal.deadline || '');
       setStatus(editingGoal.status);
       setMilestones(editingGoal.milestones || []);
@@ -37,9 +37,9 @@ export const GoalModal: React.FC = () => {
       setTitle('');
       setDescription('');
       setCategory('Финансы');
-      setTargetAmount('10000');
+      setTargetAmount('50 000 000');
       setCurrentAmount('0');
-      setUnit('$');
+      setUnit('сум');
       setDeadline('');
       setStatus('active');
       setMilestones([]);
@@ -51,7 +51,7 @@ export const GoalModal: React.FC = () => {
 
   const handleAddMilestone = () => {
     if (!newMilestoneTitle.trim()) return;
-    const target = parseFloat(newMilestoneTarget) || 0;
+    const target = parseFloat(newMilestoneTarget.replace(/\s+/g, '')) || 0;
     const newM: GoalMilestone = {
       id: 'm-' + Date.now(),
       title: newMilestoneTitle.trim(),
@@ -69,8 +69,8 @@ export const GoalModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const targetNum = parseFloat(targetAmount);
-    const currentNum = parseFloat(currentAmount) || 0;
+    const targetNum = parseFloat(targetAmount.replace(/\s+/g, ''));
+    const currentNum = parseFloat(currentAmount.replace(/\s+/g, '')) || 0;
 
     if (!title.trim()) {
       setError('Укажите название цели');
@@ -87,7 +87,7 @@ export const GoalModal: React.FC = () => {
       category: category.trim() || 'Общее',
       targetAmount: targetNum,
       currentAmount: currentNum,
-      unit: unit.trim() || 'ед.',
+      unit: unit.trim() || 'сум',
       deadline: deadline || undefined,
       status,
       milestones,
@@ -108,7 +108,7 @@ export const GoalModal: React.FC = () => {
       onClose={closeGoalModal}
       title={editingGoal ? 'Редактировать цель' : 'Новая цель'}
       subtitle="Определите измеримую метрику, этапы и дедлайн"
-      maxWidth="md"
+      maxWidth="lg"
       footer={
         <>
           <Button variant="secondary" size="sm" type="button" onClick={closeGoalModal}>
@@ -123,7 +123,7 @@ export const GoalModal: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Название цели"
-          placeholder="Например: Заработать $10,000 / Накопить на квартиру"
+          placeholder="Например: Накопить 50 000 000 сум / Купить оборудование"
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);
@@ -135,28 +135,22 @@ export const GoalModal: React.FC = () => {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Input
+          <AmountInput
             label="Целевое значение"
-            type="number"
-            min="1"
-            step="any"
-            placeholder="10000"
+            placeholder="50 000 000"
             value={targetAmount}
-            onChange={(e) => setTargetAmount(e.target.value)}
+            onChange={(val) => setTargetAmount(val)}
             required
           />
-          <Input
+          <AmountInput
             label="Текущий прогресс"
-            type="number"
-            min="0"
-            step="any"
             placeholder="0"
             value={currentAmount}
-            onChange={(e) => setCurrentAmount(e.target.value)}
+            onChange={(val) => setCurrentAmount(val)}
           />
           <Input
             label="Единица измерения"
-            placeholder="$, книг, км, %"
+            placeholder="сум, книг, км, %"
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
           />
@@ -207,7 +201,7 @@ export const GoalModal: React.FC = () => {
                   <span className={m.completed ? 'line-through text-[#8B93A1]' : ''}>{m.title}</span>
                   {m.target > 0 && (
                     <span className="text-[#8B93A1]">
-                      ({m.target} {unit})
+                      ({m.target.toLocaleString('ru-RU')} {unit})
                     </span>
                   )}
                 </div>
@@ -225,17 +219,17 @@ export const GoalModal: React.FC = () => {
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Название этапа (например: Первые $3,000)"
+              placeholder="Название этапа (например: Первые 15 000 000 сум)"
               value={newMilestoneTitle}
               onChange={(e) => setNewMilestoneTitle(e.target.value)}
               className="flex-1 bg-[#11151B] border border-[#242A33] text-xs text-[#F5F7FA] rounded-lg px-3 py-2 outline-none focus:border-indigo-500"
             />
             <input
-              type="number"
-              placeholder="Значение"
+              type="text"
+              placeholder="Сумма"
               value={newMilestoneTarget}
               onChange={(e) => setNewMilestoneTarget(e.target.value)}
-              className="w-24 bg-[#11151B] border border-[#242A33] text-xs text-[#F5F7FA] rounded-lg px-3 py-2 outline-none focus:border-indigo-500"
+              className="w-32 bg-[#11151B] border border-[#242A33] text-xs text-[#F5F7FA] rounded-lg px-3 py-2 outline-none focus:border-indigo-500"
             />
             <Button
               type="button"
@@ -251,3 +245,4 @@ export const GoalModal: React.FC = () => {
     </Modal>
   );
 };
+

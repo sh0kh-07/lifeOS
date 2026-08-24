@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Currency, DebtType } from '../../types';
+import { DebtType } from '../../types';
 import { getTodayDateString } from '../../utils/date';
 import { Button } from '../ui/Button';
-import { Input, Select, Textarea } from '../ui/Input';
+import { AmountInput, Input, Select, Textarea } from '../ui/Input';
 import { Modal } from '../ui/Modal';
 
 export const DebtModal: React.FC = () => {
@@ -16,14 +16,12 @@ export const DebtModal: React.FC = () => {
     updateDebt,
     people,
     addPerson,
-    settings,
   } = useApp();
 
   const [type, setType] = useState<DebtType>('they_owe');
   const [personId, setPersonId] = useState('');
   const [customPersonName, setCustomPersonName] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
-  const [currency, setCurrency] = useState<Currency>(settings.defaultCurrency);
   const [reason, setReason] = useState('');
   const [startDate, setStartDate] = useState(getTodayDateString());
   const [deadlineDate, setDeadlineDate] = useState('');
@@ -36,7 +34,6 @@ export const DebtModal: React.FC = () => {
       setPersonId(editingDebt.personId || '');
       setCustomPersonName(editingDebt.personName || '');
       setTotalAmount(String(editingDebt.totalAmount));
-      setCurrency(editingDebt.currency);
       setReason(editingDebt.reason);
       setStartDate(editingDebt.startDate);
       setDeadlineDate(editingDebt.deadlineDate);
@@ -46,7 +43,6 @@ export const DebtModal: React.FC = () => {
       setPersonId('');
       setCustomPersonName('');
       setTotalAmount('');
-      setCurrency(settings.defaultCurrency);
       setReason('');
       setStartDate(getTodayDateString());
       // Default deadline in 30 days
@@ -59,13 +55,13 @@ export const DebtModal: React.FC = () => {
       setNotes('');
     }
     setError('');
-  }, [editingDebt, defaultDebtType, isDebtModalOpen, settings.defaultCurrency]);
+  }, [editingDebt, defaultDebtType, isDebtModalOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const amountNum = parseFloat(totalAmount);
+    const amountNum = parseFloat(totalAmount.replace(/\s+/g, ''));
     if (isNaN(amountNum) || amountNum <= 0) {
-      setError('Укажите корректную сумму');
+      setError('Укажите корректную сумму в сумах');
       return;
     }
 
@@ -102,7 +98,7 @@ export const DebtModal: React.FC = () => {
       personId: finalPersonId,
       personName: finalPersonName,
       totalAmount: amountNum,
-      currency,
+      currency: 'UZS' as const,
       reason: reason.trim(),
       startDate,
       deadlineDate,
@@ -123,8 +119,8 @@ export const DebtModal: React.FC = () => {
       isOpen={isDebtModalOpen}
       onClose={closeDebtModal}
       title={editingDebt ? 'Редактировать запись о долге' : type === 'they_owe' ? 'Мне должны (Дебиторка)' : 'Я должен (Кредиторка)'}
-      subtitle="Фиксация обязательств, сроков и условий погашения"
-      maxWidth="md"
+      subtitle="Фиксация обязательств, сроков и условий погашения в сумах"
+      maxWidth="lg"
       footer={
         <>
           <Button variant="secondary" size="sm" type="button" onClick={closeDebtModal}>
@@ -192,35 +188,18 @@ export const DebtModal: React.FC = () => {
           )}
         </div>
 
-        {/* Amount & Currency */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="col-span-2">
-            <Input
-              label="Сумма долга"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="1000"
-              value={totalAmount}
-              onChange={(e) => {
-                setTotalAmount(e.target.value);
-                setError('');
-              }}
-              error={error}
-              required
-            />
-          </div>
-          <Select
-            label="Валюта"
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value as Currency)}
-          >
-            <option value="USD">USD ($)</option>
-            <option value="UZS">UZS (сум)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="RUB">RUB (₽)</option>
-          </Select>
-        </div>
+        {/* Amount Input */}
+        <AmountInput
+          label="Сумма долга (сум)"
+          placeholder="50 000"
+          value={totalAmount}
+          onChange={(val) => {
+            setTotalAmount(val);
+            setError('');
+          }}
+          error={error}
+          required
+        />
 
         <Input
           label="Причина / Назначение"
@@ -250,7 +229,7 @@ export const DebtModal: React.FC = () => {
 
         <Textarea
           label="Примечания / Договоренности"
-          placeholder="Условия возврата, процентная ставка, график платежей..."
+          placeholder="Условия возврата, график платежей..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
@@ -259,3 +238,4 @@ export const DebtModal: React.FC = () => {
     </Modal>
   );
 };
+

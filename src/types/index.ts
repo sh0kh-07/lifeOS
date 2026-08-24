@@ -74,7 +74,7 @@ export interface Person {
   createdAt: string;
 }
 
-export type Currency = 'USD' | 'UZS' | 'EUR' | 'RUB';
+export type Currency = 'UZS';
 
 export type TransactionType = 'income' | 'expense';
 

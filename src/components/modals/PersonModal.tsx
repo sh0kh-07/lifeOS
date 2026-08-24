@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
-import { Input, Textarea } from '../ui/Input';
+import { Input, PhoneInput, Textarea } from '../ui/Input';
 import { Modal } from '../ui/Modal';
 
 export const PersonModal: React.FC = () => {
@@ -9,7 +9,7 @@ export const PersonModal: React.FC = () => {
 
   const [name, setName] = useState('');
   const [roleOrRelation, setRoleOrRelation] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+998 ');
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [avatarColor, setAvatarColor] = useState('#3B82F6');
@@ -21,14 +21,14 @@ export const PersonModal: React.FC = () => {
     if (editingPerson) {
       setName(editingPerson.name);
       setRoleOrRelation(editingPerson.roleOrRelation || '');
-      setPhone(editingPerson.phone || '');
+      setPhone(editingPerson.phone || '+998 ');
       setEmail(editingPerson.email || '');
       setNotes(editingPerson.notes || '');
       setAvatarColor(editingPerson.avatarColor || '#3B82F6');
     } else {
       setName('');
       setRoleOrRelation('');
-      setPhone('');
+      setPhone('+998 ');
       setEmail('');
       setNotes('');
       setAvatarColor(colors[Math.floor(Math.random() * colors.length)]);
@@ -43,10 +43,11 @@ export const PersonModal: React.FC = () => {
       return;
     }
 
+    const cleanPhone = phone.trim();
     const payload = {
       name: name.trim(),
       roleOrRelation: roleOrRelation.trim() || undefined,
-      phone: phone.trim() || undefined,
+      phone: cleanPhone && cleanPhone !== '+998' ? cleanPhone : undefined,
       email: email.trim() || undefined,
       notes: notes.trim() || undefined,
       avatarColor,
@@ -67,7 +68,7 @@ export const PersonModal: React.FC = () => {
       onClose={closePersonModal}
       title={editingPerson ? 'Редактировать контакт' : 'Новый контакт'}
       subtitle="Связи с долгами, задачами и совместными проектами"
-      maxWidth="sm"
+      maxWidth="md"
       footer={
         <>
           <Button variant="secondary" size="sm" type="button" onClick={closePersonModal}>
@@ -101,12 +102,11 @@ export const PersonModal: React.FC = () => {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Input
-            label="Телефон"
-            type="tel"
-            placeholder="+7 999 000-00-00"
+          <PhoneInput
+            label="Телефон (Узбекистан +998)"
+            placeholder="+998 90 123-45-67"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(val) => setPhone(val)}
           />
           <Input
             label="Email"
@@ -146,3 +146,4 @@ export const PersonModal: React.FC = () => {
     </Modal>
   );
 };
+

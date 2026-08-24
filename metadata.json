@@ -1,0 +1,6 @@
+{
+  "name": "LifeOS - Personal Management System",
+  "description": "Comprehensive personal management system for tasks, schedule, projects, goals, finances, and debts with full offline local storage persistence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

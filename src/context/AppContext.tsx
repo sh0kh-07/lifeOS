@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { pcStorage } from '../services/pcStorage';
 import { storage } from '../services/storage';
 import {
   AppSettings,
@@ -96,6 +97,13 @@ interface AppContextType {
   clearAllData: () => void;
   importBackup: (jsonString: string) => boolean;
   exportBackup: () => string;
+  saveToPc: (customName?: string) => Promise<boolean>;
+  loadFromPc: () => Promise<boolean>;
+  disconnectPcFile: () => void;
+  connectedPcFileName: string | null;
+  lastSavedToPc: string | null;
+  isSavingToPc: boolean;
+  isFileSystemSupported: boolean;
   showToast: (title: string, message?: string, type?: ToastType) => void;
   dismissToast: (id: string) => void;
 
@@ -165,6 +173,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => storage.loadNotifications());
   const [settings, setSettings] = useState<AppSettings>(() => storage.loadSettings());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [connectedPcFileName, setConnectedPcFileName] = useState<string | null>(null);
+  const [lastSavedToPc, setLastSavedToPc] = useState<string | null>(null);
+  const [isSavingToPc, setIsSavingToPc] = useState(false);
+  const isFileSystemSupported = pcStorage.isFileSystemAccessSupported();
 
   // Modals state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -731,6 +743,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return storage.exportAllData();
   };
 
+  const saveToPc = async (customName?: string): Promise<boolean> => {
+    setIsSavingToPc(true);
+    try {
+      const dataString = storage.exportAllData();
+      const result = await pcStorage.saveToPc(dataString, customName);
+      if (result.success) {
+        setConnectedPcFileName(result.fileName);
+        const timestamp = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLastSavedToPc(timestamp);
+        showToast(
+          'Сохранено на ПК',
+          result.method === 'filesystem' 
+            ? `Синхронизировано с файлом ${result.fileName}` 
+            : `Файл ${result.fileName} успешно скачан`,
+          'success'
+        );
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      console.error('Error saving to PC:', err);
+      showToast('Ошибка сохранения', 'Не удалось записать файл на диск', 'error');
+      return false;
+    } finally {
+      setIsSavingToPc(false);
+    }
+  };
+
+  const loadFromPc = async (): Promise<boolean> => {
+    try {
+      const result = await pcStorage.loadFromPc();
+      if (result.success && result.content) {
+        const imported = importBackup(result.content);
+        if (imported) {
+          setConnectedPcFileName(result.fileName);
+          const timestamp = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          setLastSavedToPc(timestamp);
+          showToast('Загружено с ПК', `Данные из файла ${result.fileName} восстановлены`, 'success');
+          return true;
+        }
+      }
+      return false;
+    } catch (err: any) {
+      console.error('Error loading from PC:', err);
+      showToast('Ошибка загрузки', 'Не удалось прочитать файл', 'error');
+      return false;
+    }
+  };
+
+  const disconnectPcFile = () => {
+    pcStorage.disconnectFile();
+    setConnectedPcFileName(null);
+    showToast('Отключено', 'Связь с локальным файлом сброшена', 'info');
+  };
+
   // Modal handlers
   const openTaskModal = (task?: Task | null, defaultDate?: string) => {
     setEditingTask(task || null);
@@ -859,6 +926,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearAllData,
         importBackup,
         exportBackup,
+        saveToPc,
+        loadFromPc,
+        disconnectPcFile,
+        connectedPcFileName,
+        lastSavedToPc,
+        isSavingToPc,
+        isFileSystemSupported,
         showToast,
         dismissToast,
         isTaskModalOpen,

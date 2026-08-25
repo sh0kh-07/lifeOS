@@ -6,7 +6,9 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  HardDrive,
   Plus,
+  Save,
   Search,
   Sparkles,
   Trash2,
@@ -23,6 +25,10 @@ export const TopBar: React.FC = () => {
     clearAllNotifications,
     openCommandPalette,
     openQuickAction,
+    saveToPc,
+    connectedPcFileName,
+    lastSavedToPc,
+    isSavingToPc,
   } = useApp();
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -66,7 +72,22 @@ export const TopBar: React.FC = () => {
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-3 sm:gap-4">
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Quick Save to PC Button */}
+        <button
+          onClick={() => saveToPc()}
+          disabled={isSavingToPc}
+          title={
+            connectedPcFileName
+              ? `Синхронизировать с ${connectedPcFileName} (посл: ${lastSavedToPc || 'сейчас'})`
+              : 'Сохранить состояние на ПК (JSON)'
+          }
+          className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded bg-[#151A21] hover:bg-[#1C222B] active:bg-[#252D3A] border border-[#242A33] hover:border-indigo-500/50 text-[#F5F7FA] text-xs font-medium transition-colors cursor-pointer"
+        >
+          <HardDrive size={13} className={connectedPcFileName ? 'text-emerald-400' : 'text-indigo-400'} />
+          <span>{isSavingToPc ? 'Сохранение...' : 'На ПК'}</span>
+        </button>
+
         {/* + New Entry CTA */}
         <button
           onClick={openQuickAction}

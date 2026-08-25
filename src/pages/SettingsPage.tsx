@@ -4,14 +4,19 @@ import {
   Calendar,
   Check,
   CircleDollarSign,
+  Code2,
   Database,
   Download,
+  FolderSync,
+  HardDrive,
+  Laptop,
   Moon,
   RotateCcw,
   Save,
   ShieldCheck,
   Sparkles,
   Trash2,
+  Unlink,
   Upload,
   User,
 } from 'lucide-react';
@@ -30,6 +35,13 @@ export const SettingsPage: React.FC = () => {
     resetToDemoData,
     realignDatesToToday,
     clearAllData,
+    saveToPc,
+    loadFromPc,
+    disconnectPcFile,
+    connectedPcFileName,
+    lastSavedToPc,
+    isSavingToPc,
+    isFileSystemSupported,
   } = useApp();
 
   const [userName, setUserName] = useState(settings.userName);
@@ -69,7 +81,7 @@ export const SettingsPage: React.FC = () => {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(exportBackup());
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `backup_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute('download', `planner_backup_${new Date().toISOString().slice(0, 10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -81,9 +93,132 @@ export const SettingsPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-[#F5F7FA] tracking-tight">Настройки</h1>
         <p className="text-xs sm:text-sm text-[#8B93A1]">
-          Персонализация интерфейса, валюты по умолчанию, резервное копирование и управление датами
+          Персонализация интерфейса, сохранение памяти на ПК, резервное копирование и управление данными
         </p>
       </div>
+
+      {/* Direct PC Memory & Storage Section */}
+      <Card noPadding className="border-indigo-500/30">
+        <CardHeader
+          title="Сохранение памяти на ваш ПК"
+          subtitle="Прямая запись данных на жесткий диск вашего компьютера в формате JSON / файла резервной копии"
+        />
+        <CardContent className="space-y-4">
+          <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+                  <HardDrive size={22} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[#F5F7FA]">
+                      Хранилище на локальном диске
+                    </span>
+                    {connectedPcFileName ? (
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-md">
+                        Подключено: {connectedPcFileName}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 text-[10px] font-medium bg-[#151A21] text-[#8B93A1] border border-[#242A33] rounded-md">
+                        Автономно
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[#8B93A1] mt-1 leading-relaxed">
+                    {connectedPcFileName
+                      ? `Текущий рабочий файл на вашем ПК: ${connectedPcFileName}. Все изменения сохраняются непосредственно в него.`
+                      : 'Сохраняйте все задачи, финансы, долги, проекты и цели прямо в файл на вашем компьютере для 100% автономности и безопасности.'}
+                  </p>
+                  {lastSavedToPc && (
+                    <div className="text-[11px] text-indigo-400 flex items-center gap-1 mt-1.5 font-mono">
+                      <Check size={12} />
+                      <span>Последнее сохранение на ПК: {lastSavedToPc}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => saveToPc()}
+                  disabled={isSavingToPc}
+                  className="font-semibold shadow-xs"
+                >
+                  <Save size={14} />
+                  <span>{isSavingToPc ? 'Сохранение...' : 'Сохранить на ПК'}</span>
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => loadFromPc()}
+                  className="font-semibold"
+                >
+                  <Upload size={14} />
+                  <span>Загрузить с ПК</span>
+                </Button>
+
+                {connectedPcFileName && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={disconnectPcFile}
+                    title="Отключить связь с файлом"
+                    className="text-xs text-[#8B93A1] hover:text-red-400"
+                  >
+                    <Unlink size={13} />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[#242A33]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-[#8B93A1] gap-2">
+              <div className="flex items-center gap-2">
+                <FolderSync size={13} className="text-emerald-400" />
+                <span>
+                  {isFileSystemSupported
+                    ? 'Поддерживается прямая синхронизация с файловой системой ПК (File System API)'
+                    : 'Поддерживается прямое скачивание и загрузка файлов памяти на ПК'}
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-indigo-300">
+                Формат: Universal JSON Bundle
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* LocatorJS Info & Dev Inspector */}
+      <Card noPadding className="border-indigo-900/40">
+        <CardHeader
+          title="Интеграция LocatorJS (UI Inspector)"
+          subtitle="Быстрая навигация к исходному коду компонентов прямо из браузера"
+        />
+        <CardContent>
+          <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
+                <Code2 size={20} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#F5F7FA]">LocatorJS Runtime активен</span>
+                  <span className="px-2 py-0.5 text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-md">
+                    Alt + Click
+                  </span>
+                </div>
+                <p className="text-xs text-[#8B93A1] mt-1">
+                  Зажмите клавишу <kbd className="px-1.5 py-0.5 text-[10px] bg-[#151A21] border border-[#242A33] rounded text-indigo-300 font-mono">Alt</kbd> (или <kbd className="px-1.5 py-0.5 text-[10px] bg-[#151A21] border border-[#242A33] rounded text-indigo-300 font-mono">Option</kbd> на Mac) и наведите курсор на любой элемент интерфейса для мгновенной подсветки компонента и перехода к коду.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Profile & General Preferences */}
       <Card noPadding>
@@ -107,8 +242,8 @@ export const SettingsPage: React.FC = () => {
                 value={defaultCurrency}
                 onChange={(e) => setDefaultCurrency(e.target.value as Currency)}
               >
-                <option value="USD">USD ($) — Доллар США</option>
                 <option value="UZS">UZS (сум) — Узбекский сум</option>
+                <option value="USD">USD ($) — Доллар США</option>
                 <option value="EUR">EUR (€) — Евро</option>
                 <option value="RUB">RUB (₽) — Российский рубль</option>
               </Select>
@@ -291,7 +426,7 @@ export const SettingsPage: React.FC = () => {
       <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] flex items-center justify-between text-xs text-[#8B93A1]">
         <div className="flex items-center gap-2">
           <ShieldCheck size={14} className="text-indigo-400" />
-          <span>Professional Polish Theme • v1.1.0 • Client-Side Local Storage</span>
+          <span>Professional Polish Theme • v1.1.0 • Client-Side Local Storage & PC Memory Sync</span>
         </div>
         <div className="flex items-center gap-2">
           <Database size={13} />

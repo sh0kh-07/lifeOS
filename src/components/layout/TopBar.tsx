@@ -1,11 +1,15 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Activity,
   Bell,
   Check,
   CheckCircle2,
   Clock,
   ExternalLink,
+  FileCode,
+  FolderOpen,
+  FolderSync,
   HardDrive,
   Plus,
   Save,
@@ -15,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { formatDateReadable, getTodayDateString, WEEKDAYS_FULL_RU } from '../../utils/date';
+import { JsonFileModal } from '../modals/JsonFileModal';
 
 export const TopBar: React.FC = () => {
   const {
@@ -26,12 +31,14 @@ export const TopBar: React.FC = () => {
     openCommandPalette,
     openQuickAction,
     saveToPc,
+    pickAndBindExistingJsonFile,
     connectedPcFileName,
     lastSavedToPc,
     isSavingToPc,
   } = useApp();
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -72,21 +79,29 @@ export const TopBar: React.FC = () => {
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
-        {/* Quick Save to PC Button */}
-        <button
-          onClick={() => saveToPc()}
-          disabled={isSavingToPc}
-          title={
-            connectedPcFileName
-              ? `Синхронизировать с ${connectedPcFileName} (посл: ${lastSavedToPc || 'сейчас'})`
-              : 'Сохранить состояние на ПК (JSON)'
-          }
-          className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded bg-[#151A21] hover:bg-[#1C222B] active:bg-[#252D3A] border border-[#242A33] hover:border-indigo-500/50 text-[#F5F7FA] text-xs font-medium transition-colors cursor-pointer"
-        >
-          <HardDrive size={13} className={connectedPcFileName ? 'text-emerald-400' : 'text-indigo-400'} />
-          <span>{isSavingToPc ? 'Сохранение...' : 'На ПК'}</span>
-        </button>
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Real-time PC Live Sync Indicator & Quick Trigger */}
+        {connectedPcFileName ? (
+          <button
+            onClick={() => setIsJsonModalOpen(true)}
+            title={`Файл: ${connectedPcFileName} • Автосохранение включено. Нажмите для управления файлом.`}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-400 text-xs font-medium transition-all cursor-pointer shadow-xs"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="max-w-[120px] truncate text-[11px] font-mono font-semibold">{connectedPcFileName}</span>
+            <span className="hidden md:inline text-[10px] text-emerald-300 font-sans">Автосохранение</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setIsJsonModalOpen(true)}
+            title="Выбрать файл JSON на компьютере для непрерывного автосохранения"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#151A21] hover:bg-[#1C222B] active:bg-[#252D3A] border border-[#242A33] hover:border-indigo-500/50 text-[#F5F7FA] text-xs font-medium transition-colors cursor-pointer"
+          >
+            <FileCode size={14} className="text-indigo-400" />
+            <span className="hidden sm:inline">Выбрать файл JSON</span>
+            <span className="sm:hidden">JSON</span>
+          </button>
+        )}
 
         {/* + New Entry CTA */}
         <button
@@ -212,6 +227,12 @@ export const TopBar: React.FC = () => {
           {settings.userName ? settings.userName.charAt(0).toUpperCase() : 'A'}
         </div>
       </div>
+
+      {/* JSON File Selection & Auto-Save Modal */}
+      <JsonFileModal
+        isOpen={isJsonModalOpen}
+        onClose={() => setIsJsonModalOpen(false)}
+      />
     </header>
   );
 };

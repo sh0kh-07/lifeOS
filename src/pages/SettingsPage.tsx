@@ -1,12 +1,15 @@
 import React, { useRef, useState } from 'react';
 import {
+  Activity,
   AlertTriangle,
   Calendar,
   Check,
   CircleDollarSign,
-  Code2,
   Database,
   Download,
+  FileCode,
+  FilePlus2,
+  FolderOpen,
   FolderSync,
   HardDrive,
   Laptop,
@@ -36,6 +39,8 @@ export const SettingsPage: React.FC = () => {
     realignDatesToToday,
     clearAllData,
     saveToPc,
+    pickAndBindExistingJsonFile,
+    createAndBindNewJsonFile,
     loadFromPc,
     disconnectPcFile,
     connectedPcFileName,
@@ -93,19 +98,19 @@ export const SettingsPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-[#F5F7FA] tracking-tight">Настройки</h1>
         <p className="text-xs sm:text-sm text-[#8B93A1]">
-          Персонализация интерфейса, сохранение памяти на ПК, резервное копирование и управление данными
+          Персонализация интерфейса, Real-time автосохранение на ПК, резервное копирование и управление данными
         </p>
       </div>
 
-      {/* Direct PC Memory & Storage Section */}
+      {/* Real-time PC Memory & Live Auto-save Section */}
       <Card noPadding className="border-indigo-500/30">
         <CardHeader
-          title="Сохранение памяти на ваш ПК"
-          subtitle="Прямая запись данных на жесткий диск вашего компьютера в формате JSON / файла резервной копии"
+          title="Автосохранение напрямую в JSON-файл на ПК"
+          subtitle="Выберите файл .json на вашем компьютере: все изменения будут автоматически записываться прямо в него"
         />
         <CardContent className="space-y-4">
           <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
                   <HardDrive size={22} />
@@ -113,64 +118,93 @@ export const SettingsPage: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-[#F5F7FA]">
-                      Хранилище на локальном диске
+                      Привязанный файл JSON на диске:
                     </span>
                     {connectedPcFileName ? (
-                      <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-md">
-                        Подключено: {connectedPcFileName}
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        {connectedPcFileName}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 text-[10px] font-medium bg-[#151A21] text-[#8B93A1] border border-[#242A33] rounded-md">
-                        Автономно
+                        Файл не выбран (память браузера)
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[#8B93A1] mt-1 leading-relaxed">
+                  <p className="text-xs text-[#8B93A1] mt-1.5 leading-relaxed">
                     {connectedPcFileName
-                      ? `Текущий рабочий файл на вашем ПК: ${connectedPcFileName}. Все изменения сохраняются непосредственно в него.`
-                      : 'Сохраняйте все задачи, финансы, долги, проекты и цели прямо в файл на вашем компьютере для 100% автономности и безопасности.'}
+                      ? `Файл ${connectedPcFileName} активен. Каждое изменение (задачи, финансы, долги, цели, заметки) моментально и непрерывно перезаписывается в этот файл.`
+                      : 'Выберите ваш .json файл на ПК: приложение будет автоматически сохранять все обновления прямо в него.'}
                   </p>
                   {lastSavedToPc && (
-                    <div className="text-[11px] text-indigo-400 flex items-center gap-1 mt-1.5 font-mono">
-                      <Check size={12} />
-                      <span>Последнее сохранение на ПК: {lastSavedToPc}</span>
+                    <div className="text-[11px] text-emerald-400 flex items-center gap-1.5 mt-2 font-mono">
+                      <Activity size={12} className="text-emerald-400 shrink-0 animate-pulse" />
+                      <span>Потоковая запись активна (посл. сохранение: {lastSavedToPc})</span>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => saveToPc()}
-                  disabled={isSavingToPc}
-                  className="font-semibold shadow-xs"
-                >
-                  <Save size={14} />
-                  <span>{isSavingToPc ? 'Сохранение...' : 'Сохранить на ПК'}</span>
-                </Button>
+                {connectedPcFileName ? (
+                  <>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => saveToPc()}
+                      disabled={isSavingToPc}
+                      className="font-semibold shadow-xs"
+                    >
+                      <Save size={14} />
+                      <span>{isSavingToPc ? 'Запись...' : 'Сохранить сейчас'}</span>
+                    </Button>
 
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => loadFromPc()}
-                  className="font-semibold"
-                >
-                  <Upload size={14} />
-                  <span>Загрузить с ПК</span>
-                </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => pickAndBindExistingJsonFile()}
+                      disabled={isSavingToPc}
+                      className="font-semibold"
+                    >
+                      <FolderOpen size={14} />
+                      <span>Сменить файл JSON</span>
+                    </Button>
 
-                {connectedPcFileName && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={disconnectPcFile}
-                    title="Отключить связь с файлом"
-                    className="text-xs text-[#8B93A1] hover:text-red-400"
-                  >
-                    <Unlink size={13} />
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={disconnectPcFile}
+                      title="Отвязать файл"
+                      className="text-xs text-[#8B93A1] hover:text-red-400"
+                    >
+                      <Unlink size={13} />
+                      <span className="ml-1">Отвязать</span>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => pickAndBindExistingJsonFile()}
+                      disabled={isSavingToPc}
+                      className="font-semibold shadow-xs bg-indigo-600 hover:bg-indigo-500"
+                    >
+                      <FolderOpen size={14} />
+                      <span>Выбрать файл JSON на ПК</span>
+                    </Button>
+
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => createAndBindNewJsonFile()}
+                      disabled={isSavingToPc}
+                      className="font-semibold"
+                    >
+                      <FilePlus2 size={14} />
+                      <span>Создать новый .json на ПК</span>
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -180,41 +214,13 @@ export const SettingsPage: React.FC = () => {
                 <FolderSync size={13} className="text-emerald-400" />
                 <span>
                   {isFileSystemSupported
-                    ? 'Поддерживается прямая синхронизация с файловой системой ПК (File System API)'
-                    : 'Поддерживается прямое скачивание и загрузка файлов памяти на ПК'}
+                    ? 'File System Access API: прямая запись в выбранный файл на жестком диске'
+                    : 'Поддерживается прямое чтение и скачивание резервных копий JSON'}
                 </span>
               </div>
               <span className="text-[11px] font-mono text-indigo-300">
-                Формат: Universal JSON Bundle
+                Формат хранения: 100% автономный JSON
               </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* LocatorJS Info & Dev Inspector */}
-      <Card noPadding className="border-indigo-900/40">
-        <CardHeader
-          title="Интеграция LocatorJS (UI Inspector)"
-          subtitle="Быстрая навигация к исходному коду компонентов прямо из браузера"
-        />
-        <CardContent>
-          <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
-                <Code2 size={20} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#F5F7FA]">LocatorJS Runtime активен</span>
-                  <span className="px-2 py-0.5 text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-md">
-                    Alt + Click
-                  </span>
-                </div>
-                <p className="text-xs text-[#8B93A1] mt-1">
-                  Зажмите клавишу <kbd className="px-1.5 py-0.5 text-[10px] bg-[#151A21] border border-[#242A33] rounded text-indigo-300 font-mono">Alt</kbd> (или <kbd className="px-1.5 py-0.5 text-[10px] bg-[#151A21] border border-[#242A33] rounded text-indigo-300 font-mono">Option</kbd> на Mac) и наведите курсор на любой элемент интерфейса для мгновенной подсветки компонента и перехода к коду.
-                </p>
-              </div>
             </div>
           </div>
         </CardContent>
@@ -251,186 +257,136 @@ export const SettingsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Select
-                label="Первый день недели в календаре"
+                label="Первый день недели"
                 value={startOfWeek}
                 onChange={(e) => setStartOfWeek(e.target.value as 'monday' | 'sunday')}
               >
-                <option value="monday">Понедельник</option>
+                <option value="monday">Понедельник (по умолчанию)</option>
                 <option value="sunday">Воскресенье</option>
               </Select>
 
-              <div className="space-y-1.5 text-left">
-                <label className="block text-xs font-medium text-[#8B93A1]">Цветовая тема</label>
-                <div className="p-2.5 rounded-xl bg-[#11151B] border border-[#242A33] text-xs text-[#F5F7FA] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Moon size={14} className="text-indigo-400" />
-                    <span>Deep Charcoal Dark (Активна)</span>
-                  </div>
-                  <span className="text-[10px] text-emerald-400 font-mono font-bold">PREMIUM</span>
+              <div className="flex flex-col justify-end">
+                <div className="flex items-center gap-3">
+                  <Button type="submit" variant="primary" size="md">
+                    <Save size={16} />
+                    <span>Сохранить настройки</span>
+                  </Button>
+                  {savedSuccess && (
+                    <span className="text-xs text-emerald-400 flex items-center gap-1">
+                      <Check size={14} /> Настройки обновлены
+                    </span>
+                  )}
                 </div>
               </div>
-            </div>
-
-            <div className="pt-2 flex items-center gap-3">
-              <Button type="submit" variant="primary" size="sm" className="font-semibold shadow-xs">
-                <Save size={14} /> Сохранить настройки
-              </Button>
-              {savedSuccess && (
-                <span className="text-xs text-emerald-400 flex items-center gap-1 animate-in fade-in">
-                  <Check size={14} /> Настройки успешно применены
-                </span>
-              )}
             </div>
           </form>
         </CardContent>
       </Card>
 
-      {/* Date Alignment & Data Reset Control */}
+      {/* Manual Backup & Export */}
       <Card noPadding>
         <CardHeader
-          title="Синхронизация и сброс дат"
-          subtitle="Привязка всех задач, дедлайнов и графиков к текущему сегодняшнему дню"
+          title="Резервное копирование и экспорт"
+          subtitle="Экспорт в JSON или восстановление базы данных из ранее сохраненного файла"
         />
-        <CardContent>
-          <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-[#F5F7FA]">
-                <Calendar size={16} className="text-indigo-400" />
-                <span>Обнулить / Синхронизировать даты с сегодняшним днем</span>
-              </div>
-              <p className="text-xs text-[#8B93A1] mt-1">
-                Автоматически пересчитает даты всех задач, дедлайнов проектов и долгов относительно сегодняшнего дня.
-              </p>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button
-              variant="primary"
-              size="sm"
-              onClick={realignDatesToToday}
-              className="text-xs shrink-0 font-semibold"
+              variant="secondary"
+              size="md"
+              onClick={handleDownloadBackup}
+              className="flex-1"
             >
-              <RotateCcw size={13} /> Обнулить на Сегодня
+              <Download size={16} />
+              <span>Скачать резервную копию (.json)</span>
+            </Button>
+
+            <div className="flex-1">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".json,application/json"
+                className="hidden"
+                id="restore-file-input"
+              />
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full"
+              >
+                <Upload size={16} />
+                <span>Восстановить из файла JSON</span>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* System Tools & Data Management */}
+      <Card noPadding>
+        <CardHeader
+          title="Системные операции и сброс"
+          subtitle="Управление демонстрационными данными и синхронизация дат"
+        />
+        <CardContent className="space-y-4">
+          <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-[#F5F7FA]">
+                Синхронизировать все даты на сегодня
+              </div>
+              <div className="text-xs text-[#8B93A1] mt-0.5">
+                Автоматически переносит задачи, спринты и транзакции к текущему дню для демонстрации
+              </div>
+            </div>
+            <Button variant="secondary" size="sm" onClick={realignDatesToToday}>
+              <Calendar size={14} />
+              <span>Сдвинуть даты на сегодня</span>
+            </Button>
+          </div>
+
+          <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-[#F5F7FA]">
+                Сбросить на демонстрационные данные
+              </div>
+              <div className="text-xs text-[#8B93A1] mt-0.5">
+                Заполняет систему готовым набором задач, проектов, целей и финансовых операций
+              </div>
+            </div>
+            <Button variant="secondary" size="sm" onClick={resetToDemoData}>
+              <RotateCcw size={14} />
+              <span>Сбросить на демо-данные</span>
+            </Button>
+          </div>
+
+          <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-red-400">
+                Полная очистка всех данных
+              </div>
+              <div className="text-xs text-[#8B93A1] mt-0.5">
+                Удаляет все существующие записи: задачи, финансы, долги, цели и проекты
+              </div>
+            </div>
+            <Button variant="danger" size="sm" onClick={clearAllData}>
+              <Trash2 size={14} />
+              <span>Очистить все данные</span>
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Backup & Restore Section */}
-      <Card noPadding>
-        <CardHeader
-          title="Резервное копирование и экспорт"
-          subtitle="Все ваши данные хранятся локально в вашем браузере. Вы можете экспортировать их в любой момент."
-        />
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            {/* Export JSON */}
-            <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] flex flex-col justify-between space-y-3">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-[#F5F7FA]">
-                  <Download size={16} className="text-indigo-400" />
-                  <span>Экспорт данных (JSON)</span>
-                </div>
-                <p className="text-xs text-[#8B93A1] mt-1">
-                  Сохраните файл со всеми задачами, проектами, финансами, долгами и целями на ваш компьютер.
-                </p>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleDownloadBackup}
-                className="w-full justify-center"
-              >
-                <Download size={14} /> Скачать backup.json
-              </Button>
-            </div>
-
-            {/* Import JSON */}
-            <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] flex flex-col justify-between space-y-3">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-[#F5F7FA]">
-                  <Upload size={16} className="text-emerald-400" />
-                  <span>Импорт из файла</span>
-                </div>
-                <p className="text-xs text-[#8B93A1] mt-1">
-                  Восстановите состояние приложения из ранее сохраненного файла backup.json.
-                </p>
-              </div>
-
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept=".json"
-                className="hidden"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full justify-center"
-              >
-                <Upload size={14} /> Загрузить backup.json
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Danger Zone */}
-      <Card noPadding className="border-red-900/30">
-        <CardHeader
-          title="Сброс и очистка данных"
-          subtitle="Действия с локальным хранилищем"
-        />
-        <CardContent>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-xl bg-red-950/10 border border-red-500/20">
-            <div>
-              <div className="text-xs sm:text-sm font-semibold text-[#F5F7FA]">
-                Демо-данные и полный сброс
-              </div>
-              <p className="text-xs text-[#8B93A1] mt-0.5">
-                Вы можете перезагрузить демонстрационный набор или полностью очистить хранилище.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  if (window.confirm('Сбросить текущие данные и загрузить демонстрационный набор?')) {
-                    resetToDemoData();
-                  }
-                }}
-                className="text-xs"
-              >
-                <RotateCcw size={13} /> Демо-данные
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => {
-                  if (window.confirm('ВНИМАНИЕ! Это действие удалит все данные без возможности отмены. Продолжить?')) {
-                    clearAllData();
-                  }
-                }}
-                className="text-xs"
-              >
-                <Trash2 size={13} /> Очистить всё
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* System info badge */}
+      {/* Footer Info */}
       <div className="p-4 rounded-xl bg-[#11151B] border border-[#242A33] flex items-center justify-between text-xs text-[#8B93A1]">
         <div className="flex items-center gap-2">
           <ShieldCheck size={14} className="text-indigo-400" />
-          <span>Professional Polish Theme • v1.1.0 • Client-Side Local Storage & PC Memory Sync</span>
+          <span>Professional Polish Theme • Real-Time PC Memory Sync • Client-Side Autonomous</span>
         </div>
         <div className="flex items-center gap-2">
           <Database size={13} />
-          <span>Local Engine Active</span>
+          <span>Синхронизировано локально</span>
         </div>
       </div>
     </div>

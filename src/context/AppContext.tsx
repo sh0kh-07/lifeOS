@@ -98,6 +98,9 @@ interface AppContextType {
   importBackup: (jsonString: string) => boolean;
   exportBackup: () => string;
   saveToPc: (customName?: string) => Promise<boolean>;
+  pickAndBindExistingJsonFile: () => Promise<boolean>;
+  createAndBindNewJsonFile: (customName?: string) => Promise<boolean>;
+  connectPcRealtimeFile: () => Promise<boolean>;
   loadFromPc: () => Promise<boolean>;
   disconnectPcFile: () => void;
   connectedPcFileName: string | null;
@@ -206,7 +209,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
 
-  // Sync to localStorage
+  // Real-time synchronization to localStorage and connected PC file
   useEffect(() => {
     storage.saveTasks(tasks);
   }, [tasks]);
@@ -242,6 +245,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     storage.saveSettings(settings);
   }, [settings]);
+
+  // Continuous Real-Time Auto-Save directly to PC File (if connected)
+  useEffect(() => {
+    if (!pcStorage.hasConnectedFile()) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const dataString = storage.exportAllData();
+        const written = await pcStorage.writeToActiveFile(dataString);
+        if (written) {
+          const timestamp = new Date().toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+          setLastSavedToPc(timestamp);
+        }
+      } catch (e) {
+        console.warn('Real-time PC write error:', e);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [tasks, projects, goals, people, transactions, debts, payments, notifications, settings]);
 
   // Toast system
   const showToast = (title: string, message?: string, type: ToastType = 'success') => {
@@ -771,31 +798,91 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const loadFromPc = async (): Promise<boolean> => {
+  const pickAndBindExistingJsonFile = async (): Promise<boolean> => {
+    setIsSavingToPc(true);
     try {
-      const result = await pcStorage.loadFromPc();
-      if (result.success && result.content) {
-        const imported = importBackup(result.content);
-        if (imported) {
-          setConnectedPcFileName(result.fileName);
-          const timestamp = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          setLastSavedToPc(timestamp);
-          showToast('Загружено с ПК', `Данные из файла ${result.fileName} восстановлены`, 'success');
-          return true;
+      const result = await pcStorage.pickAndBindExistingFile();
+      if (result.success && result.fileName) {
+        if (result.content && result.content.trim().length > 0) {
+          const imported = importBackup(result.content);
+          if (!imported) {
+            // If the file was empty or not valid JSON, write current state into it
+            const dataString = storage.exportAllData();
+            await pcStorage.writeToActiveFile(dataString);
+          }
+        } else {
+          // Empty file: write current state into it
+          const dataString = storage.exportAllData();
+          await pcStorage.writeToActiveFile(dataString);
         }
+
+        setConnectedPcFileName(result.fileName);
+        const timestamp = new Date().toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        setLastSavedToPc(timestamp);
+
+        showToast(
+          'Файл JSON подключен!',
+          `Все изменения теперь автоматически и мгновенно сохраняются в ${result.fileName}`,
+          'success'
+        );
+        return true;
       }
       return false;
     } catch (err: any) {
-      console.error('Error loading from PC:', err);
-      showToast('Ошибка загрузки', 'Не удалось прочитать файл', 'error');
+      console.error('Error selecting JSON file:', err);
+      showToast('Ошибка выбора файла', 'Не удалось связать файл', 'error');
       return false;
+    } finally {
+      setIsSavingToPc(false);
     }
+  };
+
+  const createAndBindNewJsonFile = async (customName?: string): Promise<boolean> => {
+    setIsSavingToPc(true);
+    try {
+      const dataString = storage.exportAllData();
+      const result = await pcStorage.createAndBindNewFile(dataString, customName);
+      if (result.success && result.fileName) {
+        setConnectedPcFileName(result.fileName);
+        const timestamp = new Date().toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        setLastSavedToPc(timestamp);
+        showToast(
+          'Файл JSON создан и подключен!',
+          `Все изменения теперь автоматически сохраняются в ${result.fileName}`,
+          'success'
+        );
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      console.error('Error creating JSON file:', err);
+      showToast('Ошибка создания файла', 'Не удалось создать файл', 'error');
+      return false;
+    } finally {
+      setIsSavingToPc(false);
+    }
+  };
+
+  const connectPcRealtimeFile = async (): Promise<boolean> => {
+    return await pickAndBindExistingJsonFile();
+  };
+
+  const loadFromPc = async (): Promise<boolean> => {
+    return await pickAndBindExistingJsonFile();
   };
 
   const disconnectPcFile = () => {
     pcStorage.disconnectFile();
     setConnectedPcFileName(null);
-    showToast('Отключено', 'Связь с локальным файлом сброшена', 'info');
+    showToast('Отключено', 'Связь с файлом JSON снята', 'info');
   };
 
   // Modal handlers
@@ -927,6 +1014,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         importBackup,
         exportBackup,
         saveToPc,
+        pickAndBindExistingJsonFile,
+        createAndBindNewJsonFile,
+        connectPcRealtimeFile,
         loadFromPc,
         disconnectPcFile,
         connectedPcFileName,
